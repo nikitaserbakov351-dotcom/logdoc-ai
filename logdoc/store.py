@@ -77,6 +77,24 @@ class Hit:
     score: float
 
 
+def resolve_embedder(verbose: bool = False):
+    """Семантический эмбеддер, если sentence-transformers установлен;
+    иначе — оффлайн-фолбэк на hashing-эмбеддере. Единая точка выбора для CLI и web."""
+    try:
+        embedder = SentenceTransformerEmbedder()
+        if verbose:
+            print(f"[logdoc] эмбеддер: {embedder.name} (семантический)")
+        return embedder
+    except ImportError:
+        embedder = HashingEmbedder()
+        if verbose:
+            print(
+                f"[logdoc] эмбеддер: {embedder.name} (оффлайн-фолбэк). "
+                "Для семантического поиска: pip install sentence-transformers"
+            )
+        return embedder
+
+
 @dataclass
 class VectorStore:
     embedder_name: str

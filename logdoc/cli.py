@@ -12,22 +12,7 @@ from pathlib import Path
 from logdoc.answer import Answer, extractive_answer, gemini_answer
 from logdoc.chunking import chunk_pages
 from logdoc.ingest import extract_pages, iter_documents
-from logdoc.store import HashingEmbedder, SentenceTransformerEmbedder, VectorStore
-
-
-def resolve_embedder():
-    """Семантический эмбеддер, если он установлен; иначе — hashing-фолбэк."""
-    try:
-        embedder = SentenceTransformerEmbedder()
-        print(f"[logdoc] эмбеддер: {embedder.name} (семантический)")
-        return embedder
-    except ImportError:
-        embedder = HashingEmbedder()
-        print(
-            f"[logdoc] эмбеддер: {embedder.name} (оффлайн-фолбэк). "
-            "Для семантического поиска: pip install sentence-transformers"
-        )
-        return embedder
+from logdoc.store import VectorStore, resolve_embedder
 
 
 def cmd_ingest(args) -> None:
@@ -51,7 +36,7 @@ def cmd_ingest(args) -> None:
             "[logdoc] ВНИМАНИЕ: в PDF нет текстового слоя (сканы?): " + ", ".join(empty_text_files)
         )
 
-    embedder = resolve_embedder()
+    embedder = resolve_embedder(verbose=True)
     store = VectorStore.build(chunks, embedder)
     store.save(args.index)
     print(f"[logdoc] индекс сохранён: {args.index} ({len(store.chunks)} фрагментов)")
@@ -59,7 +44,7 @@ def cmd_ingest(args) -> None:
 
 def cmd_ask(args) -> None:
     store = VectorStore.load(args.index)
-    embedder = resolve_embedder()
+    embedder = resolve_embedder(verbose=True)
     hits = store.search(args.query, embedder, k=args.k)
 
     if args.backend == "gemini":
